@@ -11,3 +11,6 @@ dependencies:
   - pygithub=1.55
   - vega_datasets=0.9.0
   - wordcloud=1.8.1
+  - pip>=21
+  - pip:
+    - docopt==0.6.2
