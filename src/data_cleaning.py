@@ -5,8 +5,8 @@
 Cleans the scraped repo and user data from Github.
 
 Usage:
-    data_preprocess.py [options]
-    data_preprocess.py (-h | --help)
+    data_cleaning.py [options]
+    data_cleaning.py (-h | --help)
 
 Options:
     -h --help                       Show this screen.
