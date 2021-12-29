@@ -160,8 +160,8 @@ def scrape_github(token, queries, sort, order, num):
     ----------
     token : str
         Github API access token.
-    queries : list, set, or tuple of str
-        The queries to search Github for.
+    queries : str or list, set, or tuple of str
+        The query or queries to search Github for.
     sort : str
         How to sort the search results, must be one of ["stars", "forks"].
     order : str
@@ -182,10 +182,17 @@ def scrape_github(token, queries, sort, order, num):
     g = Github(token)
     github_data = dict()
 
-    for query in queries:
-        top_repos = get_top_repos(g, query, sort=sort, order=order, num=num)
+    # multiple search queries
+    if isinstance(queries, (list, set, tuple)):
+        for query in queries:
+            top_repos = get_top_repos(g, query, sort=sort, order=order, num=num)
+            user_data = get_user_data(g, top_repos)
+            github_data[query] = (top_repos, user_data)
+    # single search query
+    else:
+        top_repos = get_top_repos(g, queries, sort=sort, order=order, num=num)
         user_data = get_user_data(g, top_repos)
-        github_data[query] = (top_repos, user_data)
+        github_data[queries] = (top_repos, user_data)
 
     return github_data
 
