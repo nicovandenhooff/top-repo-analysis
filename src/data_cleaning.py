@@ -18,6 +18,9 @@ import os
 import numpy as np
 import pandas as pd
 from docopt import docopt
+from functools import partial
+from geopy.geocoders import Nominatim
+from geopy.extra.rate_limiter import RateLimiter
 
 
 def clean_repo_data(df):
@@ -117,9 +120,54 @@ def clean_data(input_path, output_path):
         if "user-data" in f:
             clean_df = clean_user_data(df)
             clean_df.to_csv(f"{output_path}{filename}", index=False)
+
+            location_df = create_location_df(clean_df)
+            location_df.to_csv(f"{output_path}user-location-data.csv", index=False)
+
         else:
             clean_df = clean_repo_data(df)
             clean_df.to_csv(f"{output_path}{filename}", index=False)
+
+
+def create_location_df(df):
+
+    url = "https://raw.githubusercontent.com/dbouquin/IS_608/master/NanosatDB_munging/Countries-Continents.csv"
+    continents_df = pd.read_csv(url, names=["continent", "country"])
+
+    location_df = df.copy().dropna(subset=["location"])
+
+    # error_inducing = ["Armonk, New York, U.S.", "School 42 Paris, France"]
+    # location_df = location_df.query("location not in @error_inducing")
+
+    geolocator = Nominatim(user_agent="github-analysis")
+
+    # allows locator to return all address details and returned results are in english
+    geocode = partial(geolocator.geocode, addressdetails=True, language="en")
+
+    # avoids rate limiting for Nominatim (1 request per second)
+    geocode = RateLimiter(geocode, min_delay_seconds=1, max_retries=0)
+
+    # gets detailed location data and drops repos without any data
+    location_df["geo-location"] = location_df["location"].apply(geocode)
+
+    location_df = location_df.dropna(subset=["geo-location"])
+
+    # adds columns to data for visualization
+    location_df["latitude"] = location_df["geo-location"].apply(
+        lambda x: x.latitude if x else None
+    )
+    location_df["longitude"] = location_df["geo-location"].apply(
+        lambda x: x.longitude if x else None
+    )
+    location_df["country"] = location_df["geo-location"].apply(
+        lambda x: x.raw["address"]["country"] if x else None
+    )
+
+    # adds continents since geopy doesn't return continent values
+    location_df = location_df.merge(continents_df, on="country", how="left")
+    location_df = location_df.dropna(subset=["continent"])
+
+    return location_df
 
 
 def main(input_path, output_path):
