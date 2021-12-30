@@ -176,5 +176,7 @@ def main(input_path, output_path):
 
 
 if __name__ == "__main__":
+    print("--Data cleaning starting")
     opt = docopt(__doc__)
     main(opt["--input_path"], opt["--output_path"])
+    print("--Data cleaning complete")
