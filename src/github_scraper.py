@@ -1,13 +1,11 @@
 # Author: Nico Van den Hooff <www.nicovandenhooff.com>
 # License: MIT License
 
-# TODO: Final proofread and code clean up
-
 """
 Scrapes the following data from a search query on Github:
     - The top n repos (max is 1000) as it relates to the search query, where "top" is calculated
     by total number of stars or forks that a repo has.
-    - The user data for the owners of the above repos.
+    - The data for the owners of the above repos.
     - All of the repository data for the top 25 Github Users for the above repos, where "top" is
     calculated by the number of followers a Github User has.
     - All of the repository data for the top 25 Github Organizations for the above repos, where "top"
@@ -30,7 +28,7 @@ Options:
                                       repos for the search queries on Github.
                                       [default: desc] 
     -n <num> --num=<num>              The number of repos to scrape, max is 1000. [default: 1000]
-    -p <path> --path=<path>           The output file path to save the scraped data. 
+    -p <path> --path=<path>           The output file path to save the scraped data.
                                       [default: data/scraped/]
 """
 
@@ -43,7 +41,7 @@ from github import Github, GithubException
 
 
 def get_top_repos(g, query, sort, order, num):
-    """Gets the top repos for a search query on Github.
+    """Gets the top n repos for a search query on Github.
 
     Note: The Github API returns a max of 1000 items per search API request.
           Therefore this method can only return 1000 repos for a given seach
@@ -199,14 +197,14 @@ def scrape_github(token, queries, sort, order, num):
 
 
 def scrape_repos(token, usernames):
-    """Scrapes all of the repository data for a Github User or Organization.
+    """Scrapes all of the repository data for a Github User (individual or organization).
 
     Parameters
     ----------
     token : str
         Github API access token.
     usernames : list, set, or tuple of str
-        The Usernames or Organizations to get repo data for.
+        The usernames to get repo data for.
 
     Returns
     -------
@@ -299,7 +297,9 @@ def get_top_users_and_orgs(user_data_df, top_repos_df):
     Parameters
     ----------
     user_data_df : pandas DataFrame
+        DataFrame that contains user data scraped with the scrape_github method.
     top_repos_df : pandas DataFrame
+        DataFrame that contains repo data scraped with the scrape_github method.
 
     Returns
     -------
@@ -351,6 +351,7 @@ def main(token, queries, sort, order, num, path):
     top_repos_df.to_csv(f"{path}top-repos.csv", index=False)
     user_data_df.to_csv(f"{path}user-data.csv", index=False)
 
+    # remove id duplicates before top user and org scrape
     top_repos_df = top_repos_df.drop_duplicates(subset="id", keep="first")
     user_data_df = user_data_df.drop_duplicates(subset="id", keep="first")
 
