@@ -21,7 +21,7 @@ Options:
     -h --help                         Show this screen.
     -q <queries> --queries=<queries>  The search queries to scrape Gitub for. If multiple queries
                                       are desired, enclose them with "" and seperate each query 
-                                      with a comma. [default: Machine Learning, Deep Learning]
+                                      with a comma. [default: Machine Learning,Deep Learning]
     -s <sort> --sort=<sort>           How to sort the repos to scrape, must be "stars" or "forks".
                                       [default: stars]
     -o <order> --order=<order>        How to order the repos to scrape, must be "asc" or "desc".
@@ -37,6 +37,7 @@ Options:
 import time
 import json
 import pandas as pd
+from tqdm import tqdm
 from docopt import docopt
 from github import Github, GithubException
 
@@ -79,7 +80,7 @@ def get_top_repos(g, query, sort, order, num):
     repos = g.search_repositories(query, sort=sort, order=order)[:num]
 
     # extracts repo information for each repo
-    for repo in repos:
+    for repo in tqdm(repos, desc=f"{query} Repo Scrape", total=num):
         check_rate_limit(g)
         top_repos.append(
             {
@@ -121,7 +122,7 @@ def get_user_data(g, repos):
     """
     user_data = []
 
-    for repo in repos:
+    for repo in tqdm(repos, desc=f"User Data Scrape"):
         check_rate_limit(g)
 
         # sets the current user, 1 API call
@@ -221,7 +222,7 @@ def scrape_repos(token, usernames):
 
     all_repos = []
 
-    for username in usernames:
+    for username in tqdm(usernames, desc=f"Top User/Organization Scrape"):
         check_rate_limit(g)
 
         try:
@@ -347,20 +348,25 @@ def main(token, queries, sort, order, num, path):
     top_repos_df = pd.concat(top_repos_dfs).reset_index(drop=True)
     user_data_df = pd.concat(user_data_dfs).reset_index(drop=True)
 
-    # gets raw data for top 25 users and top 25 orgs and processes into pandas dfs
-    top_users, top_organizations = get_top_users_and_orgs(user_data, top_repos)
-    top_user_repos_df = pd.DataFrame(scrape_repos(token, top_users))
-    top_org_repos_df = pd.DataFrame(scrape_repos(token, top_organizations))
-
-    # saves all the repo data as .csv files
     top_repos_df.to_csv(f"{path}top-repos.csv", index=False)
     user_data_df.to_csv(f"{path}user-data.csv", index=False)
+
+    top_repos_df = top_repos_df.drop_duplicates(subset="id", keep="first")
+    user_data_df = user_data_df.drop_duplicates(subset="id", keep="first")
+
+    # gets raw data for top 25 users and top 25 orgs and processes into pandas dfs
+    top_users, top_organizations = get_top_users_and_orgs(user_data_df, top_repos_df)
+
+    top_user_repos_df = pd.DataFrame(scrape_repos(token, top_users))
     top_user_repos_df.to_csv(f"{path}top-user-repos.csv", index=False)
+
+    top_org_repos_df = pd.DataFrame(scrape_repos(token, top_organizations))
     top_org_repos_df.to_csv(f"{path}top-org-repos.csv", index=False)
 
 
 if __name__ == "__main__":
 
+    print("--Data scraping starting")
     # processes command line arguments as required
     opt = docopt(__doc__)
     opt["--num"] = int(opt["--num"])
@@ -381,3 +387,5 @@ if __name__ == "__main__":
         opt["--num"],
         opt["--path"],
     )
+
+    print("--Data scraping complete")
