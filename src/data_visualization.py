@@ -2,7 +2,10 @@
 # License: MIT License
 
 """
-Visualizes the scraped and preprocessed data from Github
+Visualizes the scraped and preprocessed data from Github.
+
+Note: As the visualizations are customized for the purposes of my Medium article,
+      I have not included docstrings for my functions.
 
 Usage:
     data_cleaning.py [options]
@@ -11,7 +14,7 @@ Usage:
 Options:
     -h --help                       Show this screen.
     -i <path> --input_path=<path>   The input file path for the clean scraped data. [default: data/cleaned/]
-    -o <path> --output_path=<path>  The output file path to save the visualizations. [default: results/]
+    -o <path> --output_path=<path>  The output file path to save the visualizations. [default: results/images/]
 """
 
 
@@ -63,18 +66,15 @@ def make_wordcloud(df, column, random_state, colormap, output_path, filename):
 
 def get_worldclouds(top_repos, user_data, output_path):
     make_wordcloud(
-        top_repos, "description", 3, "plasma", output_path, "repo_description_wordcloud"
+        top_repos, "description", 3, "plasma", output_path, "worcloud_repo_description"
     )
 
-    make_wordcloud(user_data, "bio", 3, "plasma", output_path, "user_bio_wordcloud")
+    make_wordcloud(user_data, "bio", 3, "plasma", output_path, "wordcloud_user_bio")
 
 
 def get_top_10_repos_chart(top_repos, output_path):
     top_10_repos = (
-        alt.Chart(
-            top_repos,
-            # title=alt.TitleParams(text="Most popular repositories", fontSize=20),
-        )
+        alt.Chart(top_repos)
         .mark_bar()
         .encode(
             alt.X(
@@ -132,15 +132,7 @@ def get_top_10_lang_stars_chart(top_repos, output_path):
 
     top_10_languages = (
         (
-            alt.Chart(
-                language_summary,
-                # title=alt.TitleParams(
-                #     "Most popular programming languages",
-                #     dy=-5,
-                #     anchor="middle",
-                #     fontSize=20,
-                # ),
-            )
+            alt.Chart(language_summary)
             .mark_bar()
             .encode(
                 alt.X("subject", axis=None, sort=x_sort),
@@ -177,10 +169,7 @@ def get_star_distribution_chart(top_repos, output_path):
     stars_df["log stars"] = np.log(stars_df["stars"])
 
     star_distribution = (
-        alt.Chart(
-            stars_df,
-            # title=alt.TitleParams(text="Distribution of total stars", fontSize=20),
-        )
+        alt.Chart(stars_df)
         .transform_density(
             "log stars", groupby=["subject"], as_=["log stars", "density"]
         )
@@ -210,15 +199,7 @@ def get_yearly_repo_chart(top_repos, output_path):
     repo_datetime_df = get_datetime_df(top_repos)
 
     yearly_repos = (
-        alt.Chart(
-            repo_datetime_df,
-            # title=alt.TitleParams(
-            #     "When the top repositories were created",
-            #     dy=-5,
-            #     anchor="middle",
-            #     fontSize=20,
-            # ),
-        )
+        alt.Chart(repo_datetime_df)
         .mark_bar()
         .encode(
             alt.X("subject", axis=None),
@@ -243,14 +224,10 @@ def get_yearly_repo_chart(top_repos, output_path):
 
 
 def get_yearly_median_stars_chart(top_repos, output_path):
-
     repo_datetime_df = get_datetime_df(top_repos)
 
     yearly_median_stars = (
-        alt.Chart(
-            repo_datetime_df,
-            # title=alt.TitleParams("Median star count per respository", fontSize=20),
-        )
+        alt.Chart(repo_datetime_df)
         .mark_line(point=True)
         .encode(
             alt.X(
@@ -270,7 +247,6 @@ def get_yearly_median_stars_chart(top_repos, output_path):
 
 
 def get_yearly_topics_chart(top_repos, output_path):
-
     repo_datetime_df = get_datetime_df(top_repos).dropna(subset=["topics"])
     repo_datetime_df["topics"] = pd.DataFrame(repo_datetime_df["topics"].apply(eval))
 
@@ -287,10 +263,7 @@ def get_yearly_topics_chart(top_repos, output_path):
     top_topics_df = topics_df.query("topics in @top_10_topics")
 
     yearly_topics = (
-        alt.Chart(
-            top_topics_df,
-            # title=alt.TitleParams("Popular topics over the years", fontSize=20),
-        )
+        alt.Chart(top_topics_df)
         .mark_square()
         .encode(
             alt.X(
@@ -312,7 +285,6 @@ def get_yearly_topics_chart(top_repos, output_path):
 
 
 def get_user_location_chart(location_df, output_path):
-
     # required for earth outline
     graticule = alt.graticule()
     source = alt.topo_feature(data.world_110m.url, "countries")
@@ -368,13 +340,13 @@ def get_most_followed_users_chart(
     )
 
     top_user_summary_df.columns = top_user_summary_df.columns.map("-".join)
-
     top_user_summary_df = top_user_summary_df.reset_index()
 
     top_user_stats_df = user_data.query("username in @top_users").merge(
         top_user_summary_df, on="username"
     )
 
+    # make colours match location chart
     domain = ["Asia", "Europe", "North America"]
     range_ = ["#f28e2b", "#e15759", "#76b7b2"]
 
@@ -400,7 +372,6 @@ def get_most_followed_users_chart(
 
 
 def get_org_star_chart(top_org_repos, top_repos, user_data, output_path):
-
     _, top_organizations = get_top_users_and_orgs(user_data, top_repos)
 
     top_org_summary_df = (
@@ -410,7 +381,6 @@ def get_org_star_chart(top_org_repos, top_repos, user_data, output_path):
     )
 
     top_org_summary_df.columns = top_org_summary_df.columns.map("-".join)
-
     top_org_summary_df = top_org_summary_df.reset_index()
 
     top_org_stats_df = user_data.query("username in @top_organizations").merge(
@@ -453,6 +423,7 @@ def get_org_lang_charts(top_org_repos, output_path):
         .configure_axis(labelFontSize=13, titleFontSize=15)
     ).properties(width=460)
 
+    # change to datetime index for next plot
     org_language_df = org_language_df.set_index("created")
     org_language_df["year"] = org_language_df.index.year
     top_5_languages = org_language_df["language"].value_counts().head(5).index.tolist()
@@ -480,7 +451,6 @@ def get_org_lang_charts(top_org_repos, output_path):
 
 
 def main(input_path, output_path):
-
     top_repos, user_data, location_df, top_user_repos, top_org_repos = get_data(
         input_path
     )
