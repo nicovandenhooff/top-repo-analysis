@@ -130,14 +130,32 @@ def clean_data(input_path, output_path):
 
 
 def create_location_df(df):
+    """Creates a dataframe containing detailed geolocation information.
 
+    Parameters
+    ----------
+    df : pandas DataFrame
+        The dataframe to add geolocation information too.
+
+    Returns
+    -------
+    pandas DataFrame
+        The new dataframe that contains detailed geolocation data.
+    """
     url = "https://raw.githubusercontent.com/dbouquin/IS_608/master/NanosatDB_munging/Countries-Continents.csv"
-    continents_df = pd.read_csv(url, names=["continent", "country"])
+    continents_df = pd.read_csv(url, names=["continent", "country"], header=0)
+
+    missing_countries = pd.DataFrame(
+        [["Asia", "Taiwan"], ["Africa", "Eswatini"]], columns=["continent", "country"]
+    )
+    continents_df = continents_df.append(missing_countries, ignore_index=True)
 
     location_df = df.copy().dropna(subset=["location"])
 
-    # error_inducing = ["Armonk, New York, U.S.", "School 42 Paris, France"]
-    # location_df = location_df.query("location not in @error_inducing")
+    # these values caused exceptions in the location scrape, it's not necessary to
+    # remove them but it's cleaner as it avoids the printing of errors to the console.
+    error_inducing = ["Armonk, New York, U.S.", "School 42 Paris, France", "微博：迪哥有点愁"]
+    location_df = location_df.query("location not in @error_inducing")
 
     geolocator = Nominatim(user_agent="github-analysis")
 
@@ -149,7 +167,6 @@ def create_location_df(df):
 
     # gets detailed location data and drops repos without any data
     location_df["geo-location"] = location_df["location"].apply(geocode)
-
     location_df = location_df.dropna(subset=["geo-location"])
 
     # adds columns to data for visualization
@@ -164,8 +181,10 @@ def create_location_df(df):
     )
 
     # adds continents since geopy doesn't return continent values
+    to_replace = ["United States", "South Korea", "Russia", "Czechia"]
+    replace_with = ["US", "Korea, South", "Russian Federation", "CZ"]
+    location_df = location_df.replace(to_replace, value=replace_with)
     location_df = location_df.merge(continents_df, on="country", how="left")
-    location_df = location_df.dropna(subset=["continent"])
 
     return location_df
 
