@@ -77,7 +77,6 @@ def clean_user_data(df):
     pandas DataFrame
         The cleaned data.
     """
-
     # difference is that user data does not contain "topics"
     types = {
         "username": "str",
@@ -101,7 +100,65 @@ def clean_user_data(df):
     return clean_df
 
 
-# TODO: clean up file names with raw for scraped data
+def create_location_df(df):
+    """Creates a dataframe containing detailed geolocation information.
+
+    Parameters
+    ----------
+    df : pandas DataFrame
+        The dataframe to add geolocation information too.
+
+    Returns
+    -------
+    pandas DataFrame
+        The new dataframe that contains detailed geolocation data.
+    """
+    location_df = df.copy().dropna(subset=["location"])
+
+    # creates a df with continent values
+    url = "https://raw.githubusercontent.com/dbouquin/IS_608/master/NanosatDB_munging/Countries-Continents.csv"
+    continents_df = pd.read_csv(url, names=["continent", "country"], header=0)
+
+    # adds missing countries to continents df
+    missing_countries = pd.DataFrame(
+        [["Asia", "Taiwan"], ["Africa", "Eswatini"]], columns=["continent", "country"]
+    )
+    continents_df = continents_df.append(missing_countries, ignore_index=True)
+
+    # these values caused exceptions in the location scrape, it's not necessary to
+    # remove them but it's cleaner as it avoids the printing of errors to the console.
+    error_inducing = ["Armonk, New York, U.S.", "School 42 Paris, France", "微博：迪哥有点愁"]
+    location_df = location_df.query("location not in @error_inducing")
+
+    # ensures results are in english and adds sleep functionality
+    geolocator = Nominatim(user_agent="github-analysis")
+    geocode = partial(geolocator.geocode, addressdetails=True, language="en")
+    geocode = RateLimiter(geocode, min_delay_seconds=1, max_retries=0)
+
+    # gets detailed location data and drops repos without any data
+    location_df["geo-location"] = location_df["location"].apply(geocode)
+    location_df = location_df.dropna(subset=["geo-location"])
+
+    # adds columns with geolocation data
+    location_df["latitude"] = location_df["geo-location"].apply(
+        lambda x: x.latitude if x else None
+    )
+    location_df["longitude"] = location_df["geo-location"].apply(
+        lambda x: x.longitude if x else None
+    )
+    location_df["country"] = location_df["geo-location"].apply(
+        lambda x: x.raw["address"]["country"] if x else None
+    )
+
+    # adds continents since geopy doesn't return continent values
+    to_replace = ["United States", "South Korea", "Russia", "Czechia"]
+    replace_with = ["US", "Korea, South", "Russian Federation", "CZ"]
+    location_df = location_df.replace(to_replace, value=replace_with)
+    location_df = location_df.merge(continents_df, on="country", how="left")
+
+    return location_df
+
+
 def clean_data(input_path, output_path):
     """Cleans user and repo data scraped from github.
 
@@ -127,66 +184,6 @@ def clean_data(input_path, output_path):
         else:
             clean_df = clean_repo_data(df)
             clean_df.to_csv(f"{output_path}{filename}", index=False)
-
-
-def create_location_df(df):
-    """Creates a dataframe containing detailed geolocation information.
-
-    Parameters
-    ----------
-    df : pandas DataFrame
-        The dataframe to add geolocation information too.
-
-    Returns
-    -------
-    pandas DataFrame
-        The new dataframe that contains detailed geolocation data.
-    """
-    url = "https://raw.githubusercontent.com/dbouquin/IS_608/master/NanosatDB_munging/Countries-Continents.csv"
-    continents_df = pd.read_csv(url, names=["continent", "country"], header=0)
-
-    missing_countries = pd.DataFrame(
-        [["Asia", "Taiwan"], ["Africa", "Eswatini"]], columns=["continent", "country"]
-    )
-    continents_df = continents_df.append(missing_countries, ignore_index=True)
-
-    location_df = df.copy().dropna(subset=["location"])
-
-    # these values caused exceptions in the location scrape, it's not necessary to
-    # remove them but it's cleaner as it avoids the printing of errors to the console.
-    error_inducing = ["Armonk, New York, U.S.", "School 42 Paris, France", "微博：迪哥有点愁"]
-    location_df = location_df.query("location not in @error_inducing")
-
-    geolocator = Nominatim(user_agent="github-analysis")
-
-    # allows locator to return all address details and returned results are in english
-    geocode = partial(geolocator.geocode, addressdetails=True, language="en")
-
-    # avoids rate limiting for Nominatim (1 request per second)
-    geocode = RateLimiter(geocode, min_delay_seconds=1, max_retries=0)
-
-    # gets detailed location data and drops repos without any data
-    location_df["geo-location"] = location_df["location"].apply(geocode)
-    location_df = location_df.dropna(subset=["geo-location"])
-
-    # adds columns to data for visualization
-    location_df["latitude"] = location_df["geo-location"].apply(
-        lambda x: x.latitude if x else None
-    )
-    location_df["longitude"] = location_df["geo-location"].apply(
-        lambda x: x.longitude if x else None
-    )
-    location_df["country"] = location_df["geo-location"].apply(
-        lambda x: x.raw["address"]["country"] if x else None
-    )
-
-    # adds continents since geopy doesn't return continent values
-    to_replace = ["United States", "South Korea", "Russia", "Czechia"]
-    replace_with = ["US", "Korea, South", "Russian Federation", "CZ"]
-    location_df = location_df.replace(to_replace, value=replace_with)
-    location_df = location_df.merge(continents_df, on="country", how="left")
-
-    return location_df
 
 
 def main(input_path, output_path):
