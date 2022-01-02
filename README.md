@@ -31,6 +31,7 @@ At a high level, my analysis is as follows:
 I've designed the analysis in this repository so that anyone is able to recreate the data collection, cleaning, and visualization steps in a fully automated manner.  To do this, open up a terminal and follow the steps below:
 
 **Step 1: Clone this repository to your computer**
+
 ```bash
 # clone the repo
 git clone https://github.com/nicovandenhooff/top-repo-analysis.git
@@ -38,7 +39,9 @@ git clone https://github.com/nicovandenhooff/top-repo-analysis.git
 # change working directory to the repos root directory
 cd top-repo-analysis
 ```
+
 **Step 2:  Create and activate the required virtual environment**
+
 ```bash
 # create the environment
 conda env create -f environment.yaml
@@ -48,31 +51,40 @@ conda activate top-repo-analysis
 ```
 
 **Step 3: Obtain a GitHub personal access token ("PAT") and add it to the credentials file**
+
 Please see how to obtain a PAT [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).  
 
 Once you have it perform the following:
+
 ```bash
 # open the credentials file
 open src/credentials.json
 ```
+
 This will open the credentials `json` file which contains the following:
+
 ```json
 {
 "github_token": "<TOKEN>"
 }
 ```
+
 Change `<TOKEN>` to your PAT.
 
 **Step 4: Run the following command to delete the current data and visualizations in the repository**
+
 ```bash
 make clean
 ```
+
 **Step 5: Run the following command to recreate the analysis**
+
 ```bash
 make all
 ```
 
 Please note that if you are recreating the analysis:
+
 - The last step will take several hours to run (approximately 6-8 hours) as the data collection process from GitHub has to sleep to respect the GitHub API rate limit.  The total number of API requests for the data collection will approximately be between 20,000 to 30,000.
 - When the data cleaning script `data_cleaning.py` runs, there make be some errors may be printed to the screen by `GeoPy` if the `Noinatim` geolocation service is unable to find a valid location for a GitHub user.  This will not cause the script to terminate, and is just ugly in the terminal.  Unfortunately you cannot suppress these error messages, so just ignore them if they occur.
 - Getting the location data with `GeoPy` in the data cleaning script also takes about 30 minutes as the `Nominatim` geolocation service limits 1 API request per second.
@@ -85,18 +97,22 @@ You can also use the scraping script in isolation to collect new data from GitHu
 If you'd like to do this, all you'll need to do is open up a terminal, follow steps 1 to 3 above, and then perform the following:
 
 **Step a) Run the scraping script with your desired options as follows**
+
 ```bash
 python src/github_scraper.py --queries=<queries> --path=<path>
 ```
+
 - Replace `<queries>` with your desired queries.  Note that if you desire multiple search queries, enclose them in `""` separate them by a single comma with NO SPACE after the comma.  For example `"Machine Learning,Deep Learning"`
 - Replace `<path>` with the output path that you want the scraped data to be saved at.
 
 Please see the documentation in the header of the [scraping script](https://github.com/nicovandenhooff/top-repo-analysis/blob/main/src/github_scraper.py) for additional options that are available.
 
 **Step b) Run the data cleaning script to clean your newly scraped data**
-```
+
+``` bash
 python src/data_cleaning.py --input_path=<path> --output_path=<output_path>
 ```
+
 - Replace `<input_path>` with the path that you saved the scraped data at.
 - Replace `<output_path>` with the output path that you want the cleaned data to be saved at.
 - As metioned in the last section, some errors may be printed to the terminal by `GeoPy` during the data cleaning process, but feel free to ignore these as they do not affect the execution of the script.
