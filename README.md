@@ -2,16 +2,13 @@
 
 This repository contains my work related to my project where I collected data on the most popular machine learning and deep learning GitHub repositories in order to further visualize and analyze it.
 
-<!--Note: Add medium link-->
-I've written a corresponding Medium article about this project, which you can find HERE (to add link).
+I've written a corresponding Medium article about this project, which you can find [HERE](https://medium.com/@nicovandenhooff/90b9ecf12be7).
 
 At a high level, my analysis is as follows:
 
 1. I collected data on the top machine learning and deep learning repositories and their respective owners from GitHub.
 2. I cleaned and prepared the data.
-3. I visualized what I thought were interesting patterns, trends, and findings within the data, and discuss each visualization in detail.
-
-Please read the Medium article if you are interested in learning about my analysis in detail!
+3. I visualized what I thought were interesting patterns, trends, and findings within the data, and discuss each visualization in detail within the Medium article above.
 
 ### Tools used
 
