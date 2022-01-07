@@ -2,7 +2,7 @@
 
 This repository contains my work related to my project where I collected data on the most popular machine learning and deep learning GitHub repositories in order to further visualize and analyze it.
 
-I've written a corresponding article about this project, which you can find on [Towards Data Science](https://towardsdatascience.com/exploring-the-most-popular-machine-learning-and-deep-learning-github-repositories-90b9ecf12be7).
+I've written a corresponding article about this project, which you can find on [Towards Data Science](https://towardsdatascience.com/exploring-the-most-popular-machine-learning-and-deep-learning-github-repositories-90b9ecf12be7).  The article was selected as an "Editors Pick", and was also selected to be in their "Hands on Tutorials" section of their publication.
 
 At a high level, my analysis is as follows:
 
